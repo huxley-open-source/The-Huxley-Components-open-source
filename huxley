@@ -1,0 +1,161 @@
+#!/bin/sh
+
+if [ `id -u` -ne 0 ]; then
+	echo "Você precisa de privilégio de root para executar esse script."
+	exit 1
+fi
+
+
+
+NAME="huxley"
+
+JDK_HOME=/opt/jdk1.7.0
+HUXLEY_SERVICE_HOME=/home/huxleyManutencao/services/
+QUESTIONNAIRE_OBSERVER="questionnaire-observer"
+CREATE_QUESTIONNAIRE_OBSERVER="questionnaire-create-observer"
+EVALUATOR="evaluator"
+EMAIL_DELIVERY="email-delivery"
+
+QUESTIONNAIRE_OBSERVER_PID=$QUESTIONNAIRE_OBSERVER.pid
+CREATE_QUESTIONNAIRE_OBSERVER_PID=$CREATE_QUESTIONNAIRE_OBSERVER.pid
+EVALUATOR_PID=$EVALUATOR.pid
+
+export HUXLEY_SERVICE_HOME=$HUXLEY_SERVICE_HOME
+export HUXLEY_EVALUATOR_HOME=$HUXLEY_SERVICE_HOME
+
+start() {
+	if [ ! -e $1.pid ]; then
+		echo -n "Inicializando $1... "
+		start-stop-daemon --start --quiet --background --make-pidfile --pidfile $1.pid --exec $JDK_HOME/bin/java -- -jar $HUXLEY_SERVICE_HOME$1.jar
+		echo "[INICIALIZADO]"
+	else
+		echo "* ALERTA! $1 já está em execução. Utilize a opção restart para reiniciar."
+	fi
+}
+
+stop() {
+	echo -n "Parando $1... "
+	start-stop-daemon --stop --quiet --pidfile $1.pid
+	if [ -e $1.pid ]
+		then rm $1.pid
+	fi
+	echo "[PARADO]"		
+}
+
+restart() {
+	echo "Reinicializando $1... "
+	stop $1	
+	echo -n "Inicializando $1... "
+	start-stop-daemon --start --quiet --background --make-pidfile --pidfile $1.pid --exec $JDK_HOME/bin/java -- -jar $HUXLEY_SERVICE_HOME$1.jar
+	echo "[INICIALIZADO]"
+}
+
+
+help() {
+	echo "Uso: $NAME {start|stop|restart} {all|observers|evaluator|<service>}"
+}
+
+
+case $1 in
+	start)
+		case $2 in
+			all)
+				start $QUESTIONNAIRE_OBSERVER
+				start $CREATE_QUESTIONNAIRE_OBSERVER
+				start $EVALUATOR
+				start $EMAIL_DELIVERY
+			;;
+
+			questionnaire-observer)
+				start $QUESTIONNAIRE_OBSERVER
+			;;
+
+			
+			questionnaire-create-observer)
+				start $CREATE_QUESTIONNAIRE_OBSERVER
+			;;
+
+			evaluator)
+				start $EVALUATOR
+			;;
+
+			email)
+				start $EMAIL_DELIVERY
+
+			;;
+
+			*)
+				help
+			;;
+		esac
+	;;
+
+	stop)
+		case $2 in
+			all)
+				stop $QUESTIONNAIRE_OBSERVER
+				stop $CREATE_QUESTIONNAIRE_OBSERVER 
+				stop $EVALUATOR
+				stop $EMAIL_DELIVERY
+			;;
+
+			questionnaire-observer)
+				stop $QUESTIONNAIRE_OBSERVER
+			;;
+
+			
+			questionnaire-create-observer)
+				stop $CREATE_QUESTIONNAIRE_OBSERVER
+			;;
+
+			evaluator)
+				stop $EVALUATOR
+			;;
+
+			email)
+				stop $EMAIL_DELIREVY
+			;;
+
+			*)
+				help
+			;;
+		esac
+	;;
+
+	restart)
+case $2 in
+			all)
+				restart $QUESTIONNAIRE_OBSERVER
+				restart $CREATE_QUESTIONNAIRE_OBSERVER
+				restart $EVALUATOR
+			;;
+
+			questionnaire-observer)
+				restart $QUESTIONNAIRE_OBSERVER
+			;;
+
+			
+			questionnaire-create-observer)
+				restart $CREATE_QUESTIONNAIRE_OBSERVER
+			;;
+
+			evaluator)
+				restart $EVALUATOR
+			;;
+
+			email)
+				restart $EMAIL_DELIVERY
+			;;
+
+			*)
+				help
+			;;
+		esac
+	;;
+
+	*)
+		help
+	;;
+esac
+
+exit 0
